@@ -8,19 +8,22 @@
             "command": "showMessage Server restart in 5 minutes!",
             "interval": 5,
             "unit": "minutes",
-            "repeat": 1
+            "repeat": 1,
+            "status": "Listo"
         },
         {
             "command": "showMessage Server restarting now!",
             "interval": 5,
             "unit": "minutes",
-            "repeat": 1
+            "repeat": 1,
+            "status": "Listo"
         },
         {
             "command": "showMessage Welcome to Valheim server!",
             "interval": 10,
             "unit": "hours",
-            "repeat": 2
+            "repeat": 2,
+            "status": "Listo"
         }
     ]
 }
