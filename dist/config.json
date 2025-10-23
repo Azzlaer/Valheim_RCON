@@ -1,0 +1,29 @@
+{
+    "rcon_host": "127.0.0.1",
+    "rcon_port": 2974,
+    "rcon_pass": "35027595",
+    "mode": "gui",
+    "commands": [
+        {
+            "command": "showMessage Server restart in 5 minutes!",
+            "interval": 5,
+            "unit": "minutes",
+            "repeat": 1,
+            "status": "Listo"
+        },
+        {
+            "command": "showMessage Server restarting now!",
+            "interval": 5,
+            "unit": "minutes",
+            "repeat": 1,
+            "status": "Listo"
+        },
+        {
+            "command": "showMessage Welcome to Valheim server!",
+            "interval": 10,
+            "unit": "hours",
+            "repeat": 2,
+            "status": "Listo"
+        }
+    ]
+}
