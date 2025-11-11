@@ -1,82 +1,60 @@
+# main.py
 import json
-import time
 import logging
-import threading
-from rcon_client import send_rcon_command
+import sys
+import traceback
+from pathlib import Path
+import tkinter as tk
+from tkinter import messagebox
 
-# Configuración del log
-logging.basicConfig(filename="rcon_log.txt", level=logging.INFO, format="%(asctime)s - %(message)s")
+LOG_FILE = "rcon_log.txt"
+CONFIG_FILE = "config.json"
 
-# Bandera global para controlar ejecución
-running = True
+logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-def stop_execution():
-    """
-    Detiene todos los hilos de ejecución.
-    """
-    global running
-    running = False
-    print("🛑 Ejecución detenida por el usuario.")
+def load_config():
+    cfg_path = Path(CONFIG_FILE)
+    if not cfg_path.exists():
+        raise FileNotFoundError(f"No se encontró {CONFIG_FILE} en {cfg_path.resolve()}")
+    with cfg_path.open("r", encoding="utf-8") as f:
+        return json.load(f)
 
-def countdown(seconds, text=""):
-    """
-    Cuenta regresiva visual antes de enviar un comando.
-    """
-    global running
-    for i in range(seconds, 0, -1):
-        if not running:
-            return
-        print(f"\r⏳ [{text}] Enviando en {i} segundos...", end="")
-        time.sleep(1)
-    print("\n")
+def show_startup_error(msg):
+    # intenta mostrar un messagebox si la GUI puede mostrarse
+    try:
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror("Error al iniciar", msg)
+        root.destroy()
+    except Exception:
+        # fallback: print y log
+        print(msg)
+    logging.error(msg)
 
-def execute_command(cfg, cmd):
-    """
-    Ejecuta un comando con su propio temporizador y repeticiones.
-    """
-    global running
-    interval = cmd["interval"]
-    if cmd["unit"] == "minutes":
-        interval *= 60
-    elif cmd["unit"] == "hours":
-        interval *= 3600
+def main():
+    try:
+        cfg = load_config()
+    except Exception as e:
+        tb = traceback.format_exc()
+        logging.error("Error cargando config.json:\n" + tb)
+        show_startup_error(f"Error cargando {CONFIG_FILE}:\n{e}\nRevisa rcon_log.txt")
+        sys.exit(1)
 
-    for i in range(cmd["repeat"]):
-        if not running:
-            break
-        countdown(interval, cmd["command"])
-        if not running:
-            break
-        success = send_rcon_command(cfg["rcon_host"], cfg["rcon_port"], cfg["rcon_pass"], cmd["command"])
-        msg = f"Comando enviado ({i+1}/{cmd['repeat']}): {cmd['command']}"
-        if success:
-            logging.info(msg)
-            print(f"✅ {msg}")
+    mode = cfg.get("mode", "gui").lower()
+    try:
+        if mode == "console":
+            # import tardío para evitar problemas si GUI falta
+            from gui import run_console_mode
+            run_console_mode(cfg)
         else:
-            logging.error("❌ Error al enviar el comando.")
-            print("❌ Error al enviar el comando.")
-
-def run_console(cfg):
-    """
-    Ejecuta todos los comandos definidos en config.json en hilos separados.
-    """
-    global running
-    running = True
-    threads = []
-    for cmd in cfg["commands"]:
-        t = threading.Thread(target=execute_command, args=(cfg, cmd))
-        t.start()
-        threads.append(t)
-
-    for t in threads:
-        t.join()
+            # GUI mode (por defecto)
+            from gui import start_gui
+            start_gui(cfg)
+    except Exception as e:
+        tb = traceback.format_exc()
+        logging.error("Error iniciando la aplicación:\n" + tb)
+        show_startup_error(f"Error iniciando la aplicación:\n{e}\nRevisa rcon_log.txt")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    with open("config.json") as f:
-        cfg = json.load(f)
-
-    if cfg["mode"] == "console":
-        run_console(cfg)
-    else:
-        import gui
-        gui.start_gui(cfg)
+    main()
